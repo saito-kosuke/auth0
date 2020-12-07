@@ -113,10 +113,11 @@ func (i *UserIdentity) UnmarshalJSON(b []byte) error {
 	type userIdentityAlias struct {
 		*userIdentity
 		RawUserID interface{} `json:"user_id,omitempty"`
+		EmailVerified *bool `json:"-"`
 		RawEmailVerified interface{} `json:"email_verified,omitempty"`
 	}
 
-	alias := &userIdentityAlias{(*userIdentity)(i), nil}
+	alias := &userIdentityAlias{(*userIdentity)(i), nil, nil, nil}
 
 	err := json.Unmarshal(b, alias)
 	if err != nil {
@@ -135,18 +136,21 @@ func (i *UserIdentity) UnmarshalJSON(b []byte) error {
 		}
 		alias.UserID = &id
 	}
-	
+
 	if alias.RawEmailVerified != nil {
-    		var emailVerified string
-    		switch rawEmailVerified := alias.RawEmailVerified.(type) {
-    		case string:
-        		emailVerified = strconv.ParseBool(rawEmailVerified)
-    		case bool:
-        		emailVerified = rawEmailVerified
-    		default:
-        		panic(reflect.TypeOf(rawEmailVerified))
-    		}
-    		alias.EmailVerified = &emailVerified
+		var emailVerified bool
+		switch rawEmailVerified := alias.RawEmailVerified.(type) {
+		case string:
+			emailVerified, err = strconv.ParseBool(rawEmailVerified)
+			if err != nil {
+				return err
+			}
+		case bool:
+			emailVerified = rawEmailVerified
+		default:
+			panic(reflect.TypeOf(rawEmailVerified))
+		}
+		alias.EmailVerified = &emailVerified
 	}
 
 	return nil
